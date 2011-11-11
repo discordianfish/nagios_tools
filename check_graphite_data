@@ -45,6 +45,10 @@ def get_value(url, seconds=0, timeout=30):
     finally:
         signal.signal(signal.SIGALRM, old_handler)
 
+    if not data:
+        print 'Error: %s returned nothing. Wrong path?' % url
+        sys.exit(STATE_UNKNOWN)
+        
     sample_period = int(data.split('|')[0].split(',')[-1])
     all_data_points = data.split('|')[-1].split(',')
 
