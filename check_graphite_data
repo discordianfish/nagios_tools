@@ -106,7 +106,12 @@ def main(argv):
         usage()
         sys.exit(STATE_UNKNOWN)
 
-    graphite_data = get_value(url, seconds, timeout)
+
+    try:
+        graphite_data = get_value(url, seconds, timeout)
+    except Exception, e:
+        print 'Error: %s' % e
+        sys.exit(STATE_UNKNOWN)
 
     print 'Current value: %s, warn threshold: %s, crit threshold: %s' % \
             (graphite_data, warn, crit)
