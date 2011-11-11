@@ -12,3 +12,4 @@ check_graphite_data:
         -r                          Reverse - Alert when the value is UNDER warn/crit instead of OVER
         -s <secs> --seconds=<secs>  Average over the last N seconds of data
                                         Default: only use the most recent data point
+        -t <secs> --timeout=<secs>  Graphite response timeout
