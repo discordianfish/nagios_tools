@@ -4,15 +4,18 @@ import getopt
 import sys
 import urllib
 import signal
+import time
 
 STATE_OK = 0
 STATE_WARNING = 1
 STATE_CRITICAL = 2
 STATE_UNKNOWN = 3
 STATE_DEPENDENT = 4
+ALLOWED_BACKLOG = 5 # in 'sample periods'
 
-class TimeoutException(Exception): 
-    pass
+class TimeoutException(Exception):
+    def __str__(self):
+        return "Timeout error"
 
 
 def usage():
@@ -27,7 +30,7 @@ def usage():
     print '\t-t <secs> --timeout=<secs>\tGraphite response timeout'
 
 
-def get_value(url, seconds=0, timeout=30):
+def get_value(url, seconds=0, timeout=10):
     """Get the value from a Graphite graph"""
 
     def timeout_handler(signum, frame):
@@ -48,9 +51,17 @@ def get_value(url, seconds=0, timeout=30):
     if not data:
         print 'Error: %s returned nothing. Wrong path?' % url
         sys.exit(STATE_UNKNOWN)
-        
-    sample_period = int(data.split('|')[0].split(',')[-1])
+    
+    header = data.split('|')[0]
+       
+    key, start, end, sample_period = header.split(',')
+    sample_period = int(sample_period)
     all_data_points = data.split('|')[-1].split(',')
+
+    if end < time.time() + sample_period * ALLOWED_BACKLOG:
+        print 'Error: data to old, last data point: %s' % time.ctime(end)
+        sys.exit(STATE_UNKNOWN)
+
 
     # Evaluate what graphite returned, should either be a float, or None
     # First, if the number of seconds of data we want to examine is smaller or
@@ -88,7 +99,7 @@ def main(argv):
     warn = None
     crit = None
     seconds = 0
-    timeout = 30
+    timeout = 10
     reverse = False
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -114,7 +125,7 @@ def main(argv):
     try:
         graphite_data = get_value(url, seconds, timeout)
     except Exception, e:
-        print 'Error: %s' % e
+        print 'Error getting data from graphite: %s' % e
         sys.exit(STATE_UNKNOWN)
 
     print 'Current value: %s, warn threshold: %s, crit threshold: %s' % \
